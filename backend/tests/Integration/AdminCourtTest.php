@@ -2,7 +2,9 @@
 
 namespace App\Tests\Integration;
 
+use App\Entity\Tournament;
 use App\Entity\User;
+use App\Enum\TournamentFormat;
 
 class AdminCourtTest extends ApiTestCase
 {
@@ -74,6 +76,23 @@ class AdminCourtTest extends ApiTestCase
 
         $this->jsonRequest('GET', '/api/admin/courts/' . $id, null, $this->adminToken);
         $this->assertErrorCode(404, 'NOT_FOUND');
+    }
+
+    public function testCourtUsedInTournamentCannotBeDeleted(): void
+    {
+        $court = $this->addCourt('Kort 1');
+        $tournament = new Tournament();
+        $tournament->setName('Americano');
+        $tournament->setFormat(TournamentFormat::AMERICANO);
+        $tournament->setStartsAt(new \DateTimeImmutable('+7 days'));
+        $tournament->setMaxPlayers(4);
+        $tournament->setCourts([$court]);
+        $this->entityManager->persist($tournament);
+        $this->entityManager->flush();
+
+        $this->jsonRequest('DELETE', '/api/admin/courts/' . $court->getId(), null, $this->adminToken);
+
+        $this->assertErrorCode(409, 'COURT_IN_USE');
     }
 
     public function testUnknownCourtReturns404(): void

@@ -2,6 +2,7 @@
 
 namespace App\Tests\Integration;
 
+use App\Entity\Court;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
@@ -19,6 +20,7 @@ abstract class ApiTestCase extends WebTestCase
         $this->client = static::createClient();
         $this->entityManager = static::getContainer()->get(EntityManagerInterface::class);
 
+        $this->entityManager->createQuery('DELETE FROM App\Entity\Tournament')->execute();
         $this->entityManager->createQuery('DELETE FROM App\Entity\Court')->execute();
         $this->entityManager->createQuery('DELETE FROM App\Entity\User')->execute();
     }
@@ -36,6 +38,18 @@ abstract class ApiTestCase extends WebTestCase
         $this->entityManager->flush();
 
         return $user;
+    }
+
+    protected function addCourt(string $name, bool $active = true): Court
+    {
+        $court = new Court();
+        $court->setName($name);
+        $court->setActive($active);
+
+        $this->entityManager->persist($court);
+        $this->entityManager->flush();
+
+        return $court;
     }
 
     protected function createToken(User $user): string
