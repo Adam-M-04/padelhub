@@ -15,6 +15,7 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\HttpKernelInterface;
+use Symfony\Component\Serializer\Exception\ExtraAttributesException;
 use Symfony\Component\Serializer\Exception\NotEncodableValueException;
 use Symfony\Component\Validator\ConstraintViolation;
 use Symfony\Component\Validator\ConstraintViolationList;
@@ -77,6 +78,17 @@ class ApiExceptionListenerTest extends TestCase
                 ],
             ],
             $this->decode($response),
+        );
+    }
+
+    public function testUnknownFieldsReturn400(): void
+    {
+        $response = $this->handle(new ExtraAttributesException(['roles']));
+
+        $this->assertSame(400, $response->getStatusCode());
+        $this->assertSame(
+            [['field' => 'roles', 'message' => 'This field is not allowed.']],
+            $this->decode($response)['error']['details'],
         );
     }
 

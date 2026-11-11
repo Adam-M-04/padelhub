@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\KernelEvents;
+use Symfony\Component\Serializer\Exception\ExtraAttributesException;
 use Symfony\Component\Serializer\Exception\NotEncodableValueException;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 
@@ -30,6 +31,13 @@ class ApiExceptionListener
                 $exception->getMessage(),
                 $exception->getDetails(),
             );
+        } elseif ($exception instanceof ExtraAttributesException) {
+            $details = [];
+            foreach ($exception->getExtraAttributes() as $field) {
+                $details[] = ['field' => $field, 'message' => 'This field is not allowed.'];
+            }
+
+            $response = $this->createResponse(400, 'VALIDATION_ERROR', 'Validation failed', $details);
         } elseif ($exception instanceof HttpExceptionInterface) {
             $response = $this->createResponseForHttpException($exception);
         } else {

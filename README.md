@@ -28,7 +28,10 @@ compose.yaml  MariaDB, backend, worker Messengera, frontend, Mailpit
    ```bash
    cd backend && composer install && php bin/console lexik:jwt:generate-keypair && cd ..
    docker compose up -d --build
+   docker compose exec backend php bin/console doctrine:migrations:migrate --no-interaction
    ```
+
+   Przy pierwszym starcie MariaDB tworzy też bazę testową `padelhub_test` (skrypt `docker/mariadb/create-test-database.sh`).
 
 | Usługa | Adres |
 |---|---|
@@ -39,8 +42,11 @@ compose.yaml  MariaDB, backend, worker Messengera, frontend, Mailpit
 
 ## Testy
 
+Testy uruchamiamy w kontenerze, bo testy integracyjne korzystają z bazy `padelhub_test`:
+
 ```bash
-cd backend && php bin/phpunit
+docker compose exec backend php bin/console doctrine:migrations:migrate --env=test --no-interaction
+docker compose exec backend php bin/phpunit
 ```
 
 Sekrety (`APP_SECRET`, `JWT_PASSPHRASE`, hasła) są tylko w `.env` i `backend/.env.local`, które nie trafiają do repozytorium.

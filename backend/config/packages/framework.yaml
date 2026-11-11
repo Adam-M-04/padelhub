@@ -3,6 +3,12 @@ framework:
 
     session: true
 
+    exceptions:
+        App\Exception\ApiException:
+            log_level: info
+        Symfony\Component\Serializer\Exception\ExtraAttributesException:
+            log_level: info
+
 when@test:
     framework:
         test: true
