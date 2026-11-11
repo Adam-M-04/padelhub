@@ -34,7 +34,7 @@ compose.yaml  MariaDB, backend, worker Messengera, frontend, Mailpit
    docker compose exec backend php bin/console doctrine:fixtures:load --no-interaction
    ```
 
-   Fixtures tworzą konto `admin@padelhub.local` i graczy `gracz1@padelhub.local` … `gracz8@padelhub.local`.
+   Fixtures tworzą konto `admin@padelhub.local`, graczy `gracz1@padelhub.local` … `gracz8@padelhub.local` oraz korty (Kort 1–3 aktywne, Kort 4 nieaktywny).
 
    Przy pierwszym starcie MariaDB tworzy też bazę testową `padelhub_test` (skrypt `docker/mariadb/create-test-database.sh`).
 

@@ -29,6 +29,9 @@ security:
             stateless: true
             jwt: ~
 
+    access_control:
+        - { path: ^/api/admin, roles: ROLE_ADMIN }
+
 when@test:
     security:
         password_hashers:

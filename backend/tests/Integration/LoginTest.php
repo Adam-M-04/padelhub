@@ -2,31 +2,14 @@
 
 namespace App\Tests\Integration;
 
-use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Encoder\JWTEncoderInterface;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-class LoginTest extends WebTestCase
+class LoginTest extends ApiTestCase
 {
-    private KernelBrowser $client;
-
     protected function setUp(): void
     {
-        $this->client = static::createClient();
-        $container = static::getContainer();
-        $entityManager = $container->get(EntityManagerInterface::class);
-        $entityManager->createQuery('DELETE FROM App\Entity\User')->execute();
-
-        $user = new User();
-        $user->setEmail('jan@example.com');
-        $user->setFirstName('Jan');
-        $user->setLastName('Kowalski');
-        $user->setPassword($container->get(UserPasswordHasherInterface::class)->hashPassword($user, 'bardzotajne1'));
-        $entityManager->persist($user);
-        $entityManager->flush();
+        parent::setUp();
+        $this->createUser('jan@example.com');
     }
 
     public function testLoginReturnsTokenWithEmailAndRoles(): void
@@ -59,8 +42,7 @@ class LoginTest extends WebTestCase
     {
         $this->client->request('POST', '/api/auth/login', ['email' => 'jan@example.com', 'password' => 'bardzotajne1']);
 
-        $this->assertResponseStatusCodeSame(400);
-        $this->assertSame('BAD_REQUEST', $this->responseData()['error']['code']);
+        $this->assertErrorCode(400, 'BAD_REQUEST');
     }
 
     public function testMeReturnsLoggedUser(): void
@@ -68,7 +50,7 @@ class LoginTest extends WebTestCase
         $this->login('jan@example.com', 'bardzotajne1');
         $token = $this->responseData()['token'];
 
-        $this->client->request('GET', '/api/auth/me', [], [], ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]);
+        $this->jsonRequest('GET', '/api/auth/me', null, $token);
 
         $this->assertResponseIsSuccessful();
         $data = $this->responseData();
@@ -78,18 +60,16 @@ class LoginTest extends WebTestCase
 
     public function testMeWithoutToken(): void
     {
-        $this->client->request('GET', '/api/auth/me');
+        $this->jsonRequest('GET', '/api/auth/me');
 
-        $this->assertResponseStatusCodeSame(401);
-        $this->assertSame('UNAUTHORIZED', $this->responseData()['error']['code']);
+        $this->assertErrorCode(401, 'UNAUTHORIZED');
     }
 
     public function testMeWithBasicAuthorizationHeader(): void
     {
         $this->client->request('GET', '/api/auth/me', [], [], ['HTTP_AUTHORIZATION' => 'Basic amFuOmhhc2xv']);
 
-        $this->assertResponseStatusCodeSame(401);
-        $this->assertSame('UNAUTHORIZED', $this->responseData()['error']['code']);
+        $this->assertErrorCode(401, 'UNAUTHORIZED');
     }
 
     public function testMeWithModifiedToken(): void
@@ -100,12 +80,9 @@ class LoginTest extends WebTestCase
         $data['roles'] = ['ROLE_ADMIN'];
         $modifiedPayload = rtrim(strtr(base64_encode(json_encode($data)), '+/', '-_'), '=');
 
-        $this->client->request('GET', '/api/auth/me', [], [], [
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $header . '.' . $modifiedPayload . '.' . $signature,
-        ]);
+        $this->jsonRequest('GET', '/api/auth/me', null, $header . '.' . $modifiedPayload . '.' . $signature);
 
-        $this->assertResponseStatusCodeSame(401);
-        $this->assertSame('INVALID_TOKEN', $this->responseData()['error']['code']);
+        $this->assertErrorCode(401, 'INVALID_TOKEN');
     }
 
     public function testMeWithExpiredToken(): void
@@ -117,26 +94,13 @@ class LoginTest extends WebTestCase
             'exp' => time() - 3600,
         ]);
 
-        $this->client->request('GET', '/api/auth/me', [], [], ['HTTP_AUTHORIZATION' => 'Bearer ' . $token]);
+        $this->jsonRequest('GET', '/api/auth/me', null, $token);
 
-        $this->assertResponseStatusCodeSame(401);
-        $this->assertSame('TOKEN_EXPIRED', $this->responseData()['error']['code']);
+        $this->assertErrorCode(401, 'TOKEN_EXPIRED');
     }
 
     private function login(string $email, string $password): void
     {
-        $this->client->request(
-            'POST',
-            '/api/auth/login',
-            [],
-            [],
-            ['CONTENT_TYPE' => 'application/json'],
-            json_encode(['email' => $email, 'password' => $password]),
-        );
-    }
-
-    private function responseData(): array
-    {
-        return json_decode($this->client->getResponse()->getContent(), true);
+        $this->jsonRequest('POST', '/api/auth/login', ['email' => $email, 'password' => $password]);
     }
 }

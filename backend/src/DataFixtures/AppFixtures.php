@@ -2,6 +2,7 @@
 
 namespace App\DataFixtures;
 
+use App\Entity\Court;
 use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
@@ -10,6 +11,13 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class AppFixtures extends Fixture
 {
+    private const COURTS = [
+        ['Kort 1', true],
+        ['Kort 2', true],
+        ['Kort 3', true],
+        ['Kort 4', false],
+    ];
+
     private const PLAYERS = [
         ['Jan', 'Kowalski'],
         ['Anna', 'Nowak'],
@@ -43,6 +51,13 @@ class AppFixtures extends Fixture
         foreach (self::PLAYERS as $index => [$firstName, $lastName]) {
             $email = sprintf('gracz%d@padelhub.local', $index + 1);
             $manager->persist($this->createUser($email, $firstName, $lastName, $this->playerPassword));
+        }
+
+        foreach (self::COURTS as [$name, $active]) {
+            $court = new Court();
+            $court->setName($name);
+            $court->setActive($active);
+            $manager->persist($court);
         }
 
         $manager->flush();
