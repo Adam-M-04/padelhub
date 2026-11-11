@@ -3,8 +3,8 @@
 namespace App\EventListener;
 
 use App\Exception\ApiException;
+use App\Http\ApiErrorResponse;
 use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
@@ -25,7 +25,7 @@ class ApiExceptionListener
         $exception = $event->getThrowable();
 
         if ($exception instanceof ApiException) {
-            $response = $this->createResponse(
+            $response = new ApiErrorResponse(
                 $exception->getStatusCode(),
                 $exception->getErrorCode(),
                 $exception->getMessage(),
@@ -37,17 +37,17 @@ class ApiExceptionListener
                 $details[] = ['field' => $field, 'message' => 'This field is not allowed.'];
             }
 
-            $response = $this->createResponse(400, 'VALIDATION_ERROR', 'Validation failed', $details);
+            $response = new ApiErrorResponse(400, 'VALIDATION_ERROR', 'Validation failed', $details);
         } elseif ($exception instanceof HttpExceptionInterface) {
             $response = $this->createResponseForHttpException($exception);
         } else {
-            $response = $this->createResponse(500, 'INTERNAL_ERROR', 'Unexpected error');
+            $response = new ApiErrorResponse(500, 'INTERNAL_ERROR', 'Unexpected error');
         }
 
         $event->setResponse($response);
     }
 
-    private function createResponseForHttpException(HttpExceptionInterface $exception): JsonResponse
+    private function createResponseForHttpException(HttpExceptionInterface $exception): ApiErrorResponse
     {
         $previous = $exception->getPrevious();
 
@@ -60,11 +60,11 @@ class ApiExceptionListener
                 ];
             }
 
-            return $this->createResponse(400, 'VALIDATION_ERROR', 'Validation failed', $details);
+            return new ApiErrorResponse(400, 'VALIDATION_ERROR', 'Validation failed', $details);
         }
 
         if ($previous instanceof NotEncodableValueException) {
-            return $this->createResponse(400, 'INVALID_JSON', 'Request body is not valid JSON');
+            return new ApiErrorResponse(400, 'INVALID_JSON', 'Request body is not valid JSON');
         }
 
         $statusCode = $exception->getStatusCode();
@@ -80,23 +80,9 @@ class ApiExceptionListener
         };
         $message = Response::$statusTexts[$statusCode] ?? 'HTTP error';
 
-        $response = $this->createResponse($statusCode, $errorCode, $message);
+        $response = new ApiErrorResponse($statusCode, $errorCode, $message);
         $response->headers->add($exception->getHeaders());
 
         return $response;
-    }
-
-    private function createResponse(int $statusCode, string $errorCode, string $message, ?array $details = null): JsonResponse
-    {
-        $error = [
-            'code' => $errorCode,
-            'message' => $message,
-        ];
-
-        if ($details !== null) {
-            $error['details'] = $details;
-        }
-
-        return new JsonResponse(['error' => $error], $statusCode);
     }
 }

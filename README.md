@@ -18,6 +18,8 @@ compose.yaml  MariaDB, backend, worker Messengera, frontend, Mailpit
    ```
    APP_SECRET=<losowy ciąg>
    JWT_PASSPHRASE=<losowy ciąg>
+   FIXTURES_ADMIN_PASSWORD=<hasło administratora z fixtures>
+   FIXTURES_PLAYER_PASSWORD=<hasło graczy z fixtures>
    DATABASE_URL="mysql://padelhub:<DB_PASSWORD>@127.0.0.1:3306/padelhub?serverVersion=11.4.0-MariaDB&charset=utf8mb4"
    ```
 
@@ -29,7 +31,10 @@ compose.yaml  MariaDB, backend, worker Messengera, frontend, Mailpit
    cd backend && composer install && php bin/console lexik:jwt:generate-keypair && cd ..
    docker compose up -d --build
    docker compose exec backend php bin/console doctrine:migrations:migrate --no-interaction
+   docker compose exec backend php bin/console doctrine:fixtures:load --no-interaction
    ```
+
+   Fixtures tworzą konto `admin@padelhub.local` i graczy `gracz1@padelhub.local` … `gracz8@padelhub.local`.
 
    Przy pierwszym starcie MariaDB tworzy też bazę testową `padelhub_test` (skrypt `docker/mariadb/create-test-database.sh`).
 
