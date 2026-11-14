@@ -100,4 +100,17 @@ class GameMatch
     {
         return $this->team2Score;
     }
+
+    public function setScore(int $team1Score, int $team2Score): static
+    {
+        $this->team1Score = $team1Score;
+        $this->team2Score = $team2Score;
+
+        return $this;
+    }
+
+    public function hasScore(): bool
+    {
+        return $this->team1Score !== null && $this->team2Score !== null;
+    }
 }
