@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\GameMatchRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Serializer\Attribute\Groups;
@@ -14,7 +15,7 @@ class GameMatch
 {
     #[ORM\Id]
     #[ORM\Column(type: UuidType::NAME)]
-    #[Groups(['round:read'])]
+    #[Groups(['round:read', 'match:read'])]
     private Uuid $id;
 
     #[ORM\ManyToOne(inversedBy: 'matches')]
@@ -23,7 +24,7 @@ class GameMatch
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
-    #[Groups(['round:read'])]
+    #[Groups(['round:read', 'match:read'])]
     private Court $court;
 
     #[ORM\ManyToOne]
@@ -43,12 +44,17 @@ class GameMatch
     private User $team2Player2;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['round:read'])]
+    #[Groups(['round:read', 'match:read'])]
     private ?int $team1Score = null;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['round:read'])]
+    #[Groups(['round:read', 'match:read'])]
     private ?int $team2Score = null;
+
+    #[ORM\Version]
+    #[ORM\Column(type: Types::INTEGER)]
+    #[Groups(['round:read', 'match:read'])]
+    private int $version = 1;
 
     public function __construct(Round $round, Court $court, array $team1, array $team2)
     {
@@ -74,13 +80,13 @@ class GameMatch
         return $this->court;
     }
 
-    #[Groups(['round:read'])]
+    #[Groups(['round:read', 'match:read'])]
     public function getTeam1(): array
     {
         return [$this->team1Player1, $this->team1Player2];
     }
 
-    #[Groups(['round:read'])]
+    #[Groups(['round:read', 'match:read'])]
     public function getTeam2(): array
     {
         return [$this->team2Player1, $this->team2Player2];
@@ -99,6 +105,22 @@ class GameMatch
     public function getTeam2Score(): ?int
     {
         return $this->team2Score;
+    }
+
+    public function getVersion(): int
+    {
+        return $this->version;
+    }
+
+    public function hasPlayer(User $user): bool
+    {
+        foreach ($this->getPlayers() as $player) {
+            if ($player->getId()->equals($user->getId())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function setScore(int $team1Score, int $team2Score): static
