@@ -4,12 +4,15 @@ namespace App\Service;
 
 use App\Dto\TournamentRequest;
 use App\Entity\Tournament;
+use App\Enum\RegistrationStatus;
 use App\Enum\TournamentStatus;
 use App\Exception\ConflictException;
 use App\Exception\NotFoundException;
 use App\Exception\ValidationException;
 use App\Repository\CourtRepository;
+use App\Repository\RegistrationRepository;
 use App\Repository\TournamentRepository;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -19,6 +22,8 @@ class TournamentService
         private EntityManagerInterface $entityManager,
         private TournamentRepository $tournamentRepository,
         private CourtRepository $courtRepository,
+        private RegistrationRepository $registrationRepository,
+        private RegistrationService $registrationService,
     ) {
     }
 
@@ -67,16 +72,31 @@ class TournamentService
 
     public function update(Uuid $id, TournamentRequest $request): Tournament
     {
-        $tournament = $this->get($id);
+        return $this->entityManager->wrapInTransaction(function () use ($id, $request) {
+            $tournament = $this->entityManager->find(Tournament::class, $id, LockMode::PESSIMISTIC_WRITE);
 
-        if (!in_array($tournament->getStatus(), [TournamentStatus::DRAFT, TournamentStatus::OPEN], true)) {
-            throw new ConflictException('Tournament can be edited only before it starts', 'TOURNAMENT_NOT_EDITABLE');
-        }
+            if ($tournament === null) {
+                throw new NotFoundException('Tournament');
+            }
 
-        $this->applyRequest($tournament, $request);
-        $this->entityManager->flush();
+            if (!in_array($tournament->getStatus(), [TournamentStatus::DRAFT, TournamentStatus::OPEN], true)) {
+                throw new ConflictException('Tournament can be edited only before it starts', 'TOURNAMENT_NOT_EDITABLE');
+            }
 
-        return $tournament;
+            $registeredCount = $this->registrationRepository->countByStatus($tournament, RegistrationStatus::REGISTERED);
+
+            if ($request->maxPlayers < $registeredCount) {
+                throw new ValidationException([[
+                    'field' => 'maxPlayers',
+                    'message' => sprintf('Max players cannot be lower than the number of registered players (%d).', $registeredCount),
+                ]]);
+            }
+
+            $this->applyRequest($tournament, $request);
+            $this->registrationService->fillFreeSpots($tournament);
+
+            return $tournament;
+        });
     }
 
     public function delete(Uuid $id): void

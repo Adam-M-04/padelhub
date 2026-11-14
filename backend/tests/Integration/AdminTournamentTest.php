@@ -131,6 +131,33 @@ class AdminTournamentTest extends ApiTestCase
         $this->assertErrorCode(409, 'TOURNAMENT_NOT_EDITABLE');
     }
 
+    public function testMaxPlayersCannotBeLowerThanRegisteredPlayers(): void
+    {
+        $id = $this->createTournament();
+        $this->changeStatus($id, TournamentStatus::OPEN);
+        $this->joinPlayers($id, 5);
+        $data = $this->validData();
+        $data['maxPlayers'] = 4;
+
+        $this->jsonRequest('PUT', '/api/admin/tournaments/' . $id, $data, $this->adminToken);
+
+        $this->assertErrorCode(400, 'VALIDATION_ERROR');
+        $this->assertSame('maxPlayers', $this->responseData()['error']['details'][0]['field']);
+    }
+
+    public function testIncreasingMaxPlayersPromotesReserves(): void
+    {
+        $id = (string) $this->createOpenTournament(4)->getId();
+        $this->joinPlayers($id, 6);
+
+        $this->jsonRequest('PUT', '/api/admin/tournaments/' . $id, $this->validData(), $this->adminToken);
+        $this->assertResponseIsSuccessful();
+
+        $this->jsonRequest('GET', '/api/tournaments/' . $id . '/registrations');
+        $this->assertCount(6, $this->responseData()['registered']);
+        $this->assertSame([], $this->responseData()['reserve']);
+    }
+
     public function testAdminCanOpenDraftTournament(): void
     {
         $id = $this->createTournament();
@@ -203,6 +230,13 @@ class AdminTournamentTest extends ApiTestCase
         $this->jsonRequest('POST', '/api/admin/tournaments', $this->validData(), $this->adminToken);
 
         return $this->responseData()['id'];
+    }
+
+    private function joinPlayers(string $id, int $count): void
+    {
+        for ($i = 1; $i <= $count; $i++) {
+            $this->joinTournament($id, $this->createUser('gracz' . $i . '@example.com'));
+        }
     }
 
     private function changeStatus(string $id, TournamentStatus $status): void

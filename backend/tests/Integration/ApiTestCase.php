@@ -3,7 +3,10 @@
 namespace App\Tests\Integration;
 
 use App\Entity\Court;
+use App\Entity\Tournament;
 use App\Entity\User;
+use App\Enum\TournamentFormat;
+use App\Enum\TournamentStatus;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -50,6 +53,27 @@ abstract class ApiTestCase extends WebTestCase
         $this->entityManager->flush();
 
         return $court;
+    }
+
+    protected function createOpenTournament(int $maxPlayers = 4): Tournament
+    {
+        $tournament = new Tournament();
+        $tournament->setName('Americano');
+        $tournament->setFormat(TournamentFormat::AMERICANO);
+        $tournament->setStartsAt(new \DateTimeImmutable('+7 days'));
+        $tournament->setMaxPlayers($maxPlayers);
+        $tournament->setStatus(TournamentStatus::OPEN);
+        $tournament->setCourts([$this->addCourt('Kort ' . uniqid())]);
+
+        $this->entityManager->persist($tournament);
+        $this->entityManager->flush();
+
+        return $tournament;
+    }
+
+    protected function joinTournament(string $tournamentId, User $player): void
+    {
+        $this->jsonRequest('POST', '/api/tournaments/' . $tournamentId . '/registration', null, $this->createToken($player));
     }
 
     protected function createToken(User $user): string

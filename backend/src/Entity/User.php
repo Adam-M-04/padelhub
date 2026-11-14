@@ -20,7 +20,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[ORM\Id]
     #[ORM\Column(type: UuidType::NAME)]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'player:read'])]
     private Uuid $id;
 
     #[ORM\Column(length: 180)]
@@ -31,11 +31,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(length: 100)]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'player:read'])]
     private ?string $firstName = null;
 
     #[ORM\Column(length: 100)]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'player:read'])]
     private ?string $lastName = null;
 
     #[ORM\Column]
