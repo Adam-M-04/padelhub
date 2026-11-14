@@ -2,7 +2,7 @@ import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 import { useAuth } from '../auth/useAuth.js'
 
 export default function Layout() {
-  const { user, loading, logout } = useAuth()
+  const { user, isAdmin, loading, logout } = useAuth()
   const navigate = useNavigate()
 
   function handleLogout() {
@@ -17,6 +17,7 @@ export default function Layout() {
           <Link to="/" className="logo">PadelHub</Link>
           <nav className="nav">
             <NavLink to="/" end>Turnieje</NavLink>
+            {isAdmin && <NavLink to="/admin">Panel admina</NavLink>}
           </nav>
           <div className="account">
             {loading ? null : user ? (

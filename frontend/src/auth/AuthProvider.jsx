@@ -35,8 +35,10 @@ export default function AuthProvider({ children }) {
     setUser(null)
   }
 
+  const isAdmin = user !== null && user.roles.includes('ROLE_ADMIN')
+
   return (
-    <AuthContext value={{ user, loading, login, register, logout }}>
+    <AuthContext value={{ user, isAdmin, loading, login, register, logout }}>
       {children}
     </AuthContext>
   )

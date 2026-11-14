@@ -1,10 +1,6 @@
 import { useAuth } from '../auth/useAuth.js'
-import { playerName } from '../labels.js'
+import { teamNames } from '../labels.js'
 import MatchScoreForm from './MatchScoreForm.jsx'
-
-function teamNames(team) {
-  return team.map(playerName).join(' i ')
-}
 
 export default function MyMatches({ tournament, rounds, onChanged }) {
   const { user } = useAuth()
