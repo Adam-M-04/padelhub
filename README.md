@@ -36,6 +36,17 @@ compose.yaml  MariaDB, backend, worker Messengera, frontend, Mailpit
 
    Fixtures tworzą konto `admin@padelhub.local`, graczy `gracz1@padelhub.local` … `gracz8@padelhub.local` oraz korty (Kort 1–3 aktywne, Kort 4 nieaktywny).
 
+   Są też przykładowe turnieje:
+
+   | Turniej | Stan |
+   |---|---|
+   | Mexicano dla wszystkich | zapisy otwarte, 0/8 graczy |
+   | Wieczorne Americano | zapisy otwarte, 7/8 graczy – wystarczy zapisać `gracz1` i admin może wystartować |
+   | Poranne Americano | w trakcie, runda 2 – mecz `gracz1` czeka na wynik |
+   | Liga Mexicano | w trakcie, runda 2 bez wyniku |
+   | Americano klubowe | zakończony, 3 rundy |
+   | Mexicano dla zaawansowanych | zakończony, 3 rundy |
+
    Przy pierwszym starcie MariaDB tworzy też bazę testową `padelhub_test` (skrypt `docker/mariadb/create-test-database.sh`).
 
 | Usługa | Adres |
