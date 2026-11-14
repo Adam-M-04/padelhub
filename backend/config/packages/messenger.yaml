@@ -11,7 +11,8 @@ framework:
             failed: 'doctrine://default?queue_name=failed'
 
         routing:
-            Symfony\Component\Mailer\Messenger\SendEmailMessage: async
+            App\Message\RoundCreated: async
+            App\Message\PlayerPromoted: async
 
 when@test:
     framework:

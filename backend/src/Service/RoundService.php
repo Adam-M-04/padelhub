@@ -10,9 +10,11 @@ use App\Enum\TournamentFormat;
 use App\Enum\TournamentStatus;
 use App\Exception\ConflictException;
 use App\Exception\NotFoundException;
+use App\Message\RoundCreated;
 use App\Repository\RoundRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Uid\Uuid;
 
 class RoundService
@@ -22,6 +24,7 @@ class RoundService
         private RoundRepository $roundRepository,
         private AmericanoPairing $americanoPairing,
         private RankingCalculator $rankingCalculator,
+        private MessageBusInterface $messageBus,
     ) {
     }
 
@@ -139,6 +142,9 @@ class RoundService
         }
 
         $this->entityManager->persist($round);
+        $this->entityManager->flush();
+
+        $this->messageBus->dispatch(new RoundCreated($round->getId()));
 
         return $round;
     }

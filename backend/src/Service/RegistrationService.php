@@ -9,9 +9,11 @@ use App\Enum\RegistrationStatus;
 use App\Enum\TournamentStatus;
 use App\Exception\ConflictException;
 use App\Exception\NotFoundException;
+use App\Message\PlayerPromoted;
 use App\Repository\RegistrationRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Uid\Uuid;
 
 class RegistrationService
@@ -19,6 +21,7 @@ class RegistrationService
     public function __construct(
         private EntityManagerInterface $entityManager,
         private RegistrationRepository $registrationRepository,
+        private MessageBusInterface $messageBus,
     ) {
     }
 
@@ -83,13 +86,13 @@ class RegistrationService
         });
     }
 
-    public function fillFreeSpots(Tournament $tournament): array
+    public function fillFreeSpots(Tournament $tournament): void
     {
         $registeredCount = $this->registrationRepository->countByStatus($tournament, RegistrationStatus::REGISTERED);
         $freeSpots = $tournament->getMaxPlayers() - $registeredCount;
 
         if ($freeSpots <= 0) {
-            return [];
+            return;
         }
 
         $reserves = $this->registrationRepository->findByStatus($tournament, RegistrationStatus::RESERVE);
@@ -97,9 +100,8 @@ class RegistrationService
 
         foreach ($promoted as $registration) {
             $registration->setStatus(RegistrationStatus::REGISTERED);
+            $this->messageBus->dispatch(new PlayerPromoted($registration->getId()));
         }
-
-        return $promoted;
     }
 
     private function lockOpenTournament(Uuid $tournamentId): Tournament
