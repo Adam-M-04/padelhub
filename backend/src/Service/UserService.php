@@ -5,6 +5,7 @@ namespace App\Service;
 use App\Dto\RegisterRequest;
 use App\Entity\User;
 use App\Exception\ConflictException;
+use App\Repository\UserRepository;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -14,7 +15,13 @@ class UserService
     public function __construct(
         private EntityManagerInterface $entityManager,
         private UserPasswordHasherInterface $passwordHasher,
+        private UserRepository $userRepository,
     ) {
+    }
+
+    public function getAll(): array
+    {
+        return $this->userRepository->findBy([], ['lastName' => 'ASC', 'firstName' => 'ASC', 'email' => 'ASC']);
     }
 
     public function register(RegisterRequest $request): User
