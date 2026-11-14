@@ -63,7 +63,12 @@ abstract class ApiTestCase extends WebTestCase
         $tournament->setStartsAt(new \DateTimeImmutable('+7 days'));
         $tournament->setMaxPlayers($maxPlayers);
         $tournament->setStatus(TournamentStatus::OPEN);
-        $tournament->setCourts([$this->addCourt('Kort ' . uniqid())]);
+
+        $courts = [];
+        for ($i = 1; $i <= ceil($maxPlayers / 4); $i++) {
+            $courts[] = $this->addCourt('Kort ' . $i . ' ' . uniqid());
+        }
+        $tournament->setCourts($courts);
 
         $this->entityManager->persist($tournament);
         $this->entityManager->flush();

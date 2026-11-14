@@ -24,6 +24,7 @@ class TournamentService
         private CourtRepository $courtRepository,
         private RegistrationRepository $registrationRepository,
         private RegistrationService $registrationService,
+        private RoundService $roundService,
     ) {
     }
 
@@ -125,6 +126,40 @@ class TournamentService
         $this->entityManager->flush();
 
         return $tournament;
+    }
+
+    public function start(Uuid $id): Tournament
+    {
+        return $this->entityManager->wrapInTransaction(function () use ($id) {
+            $tournament = $this->entityManager->find(Tournament::class, $id, LockMode::PESSIMISTIC_WRITE);
+
+            if ($tournament === null) {
+                throw new NotFoundException('Tournament');
+            }
+
+            if ($tournament->getStatus() !== TournamentStatus::OPEN) {
+                throw new ConflictException('Only open tournaments can be started', 'TOURNAMENT_NOT_OPEN');
+            }
+
+            $this->checkCourtsAreActive($tournament->getCourts()->toArray());
+
+            $registrations = $this->registrationRepository->findByStatus($tournament, RegistrationStatus::REGISTERED);
+            $playerCount = count($registrations);
+
+            if ($playerCount === 0 || $playerCount % 4 !== 0) {
+                throw new ConflictException(
+                    sprintf('Number of players must be a multiple of 4 (currently %d)', $playerCount),
+                    'INVALID_PLAYER_COUNT',
+                );
+            }
+
+            $players = array_map(fn ($registration) => $registration->getPlayer(), $registrations);
+
+            $tournament->setStatus(TournamentStatus::IN_PROGRESS);
+            $this->roundService->createFirstRound($tournament, $players);
+
+            return $tournament;
+        });
     }
 
     private function applyRequest(Tournament $tournament, TournamentRequest $request): void
