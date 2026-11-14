@@ -3,6 +3,7 @@
 namespace App\Tests\Integration;
 
 use App\Entity\User;
+use Symfony\Component\Uid\Uuid;
 
 class RegisterTest extends ApiTestCase
 {
@@ -20,6 +21,7 @@ class RegisterTest extends ApiTestCase
         $this->assertSame('jan.kowalski@example.com', $data['email']);
         $this->assertSame(['ROLE_PLAYER'], $data['roles']);
         $this->assertArrayNotHasKey('password', $data);
+        $this->assertTrue(Uuid::isValid($data['id']));
 
         $user = $this->entityManager->getRepository(User::class)->find($data['id']);
         $this->assertNotSame('bardzotajne1', $user->getPassword());

@@ -198,14 +198,14 @@ class AdminTournamentTest extends ApiTestCase
         ];
     }
 
-    private function createTournament(): int
+    private function createTournament(): string
     {
         $this->jsonRequest('POST', '/api/admin/tournaments', $this->validData(), $this->adminToken);
 
         return $this->responseData()['id'];
     }
 
-    private function changeStatus(int $id, TournamentStatus $status): void
+    private function changeStatus(string $id, TournamentStatus $status): void
     {
         $tournament = $this->entityManager->find(Tournament::class, $id);
         $tournament->setStatus($status);

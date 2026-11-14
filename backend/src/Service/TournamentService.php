@@ -11,6 +11,7 @@ use App\Exception\ValidationException;
 use App\Repository\CourtRepository;
 use App\Repository\TournamentRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Uid\Uuid;
 
 class TournamentService
 {
@@ -31,7 +32,7 @@ class TournamentService
         return $this->tournamentRepository->findPublished();
     }
 
-    public function get(int $id): Tournament
+    public function get(Uuid $id): Tournament
     {
         $tournament = $this->tournamentRepository->find($id);
 
@@ -42,7 +43,7 @@ class TournamentService
         return $tournament;
     }
 
-    public function getPublishedOne(int $id): Tournament
+    public function getPublishedOne(Uuid $id): Tournament
     {
         $tournament = $this->get($id);
 
@@ -64,7 +65,7 @@ class TournamentService
         return $tournament;
     }
 
-    public function update(int $id, TournamentRequest $request): Tournament
+    public function update(Uuid $id, TournamentRequest $request): Tournament
     {
         $tournament = $this->get($id);
 
@@ -78,7 +79,7 @@ class TournamentService
         return $tournament;
     }
 
-    public function delete(int $id): void
+    public function delete(Uuid $id): void
     {
         $tournament = $this->get($id);
 
@@ -90,7 +91,7 @@ class TournamentService
         $this->entityManager->flush();
     }
 
-    public function open(int $id): Tournament
+    public function open(Uuid $id): Tournament
     {
         $tournament = $this->get($id);
 

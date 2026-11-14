@@ -6,6 +6,7 @@ use App\Entity\Court;
 use App\Entity\Tournament;
 use App\Enum\TournamentFormat;
 use App\Enum\TournamentStatus;
+use Symfony\Component\Uid\Uuid;
 
 class TournamentTest extends ApiTestCase
 {
@@ -48,6 +49,31 @@ class TournamentTest extends ApiTestCase
         $this->jsonRequest('GET', '/api/tournaments/' . $tournament->getId());
 
         $this->assertErrorCode(404, 'NOT_FOUND');
+    }
+
+    public function testUnknownTournamentReturns404(): void
+    {
+        $this->jsonRequest('GET', '/api/tournaments/019a6b2e-7c4d-7e2f-9a1b-3c5d7e9f1a2b');
+
+        $this->assertErrorCode(404, 'NOT_FOUND');
+        $this->assertSame('Tournament not found', $this->responseData()['error']['message']);
+    }
+
+    public function testNumericIdIsNotAccepted(): void
+    {
+        $this->jsonRequest('GET', '/api/tournaments/1');
+
+        $this->assertErrorCode(404, 'NOT_FOUND');
+    }
+
+    public function testIdIsUuid(): void
+    {
+        $tournament = $this->addTournament('Americano', '+7 days', TournamentStatus::OPEN);
+
+        $this->jsonRequest('GET', '/api/tournaments');
+
+        $this->assertSame((string) $tournament->getId(), $this->responseData()[0]['id']);
+        $this->assertTrue(Uuid::isValid($this->responseData()[0]['id']));
     }
 
     private function addTournament(string $name, string $startsAt, TournamentStatus $status): Tournament

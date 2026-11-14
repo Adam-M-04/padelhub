@@ -8,17 +8,18 @@ use App\Repository\TournamentRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: TournamentRepository::class)]
 #[ORM\Table(name: 'tournaments')]
 class Tournament
 {
     #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column]
+    #[ORM\Column(type: UuidType::NAME)]
     #[Groups(['tournament:read'])]
-    private ?int $id = null;
+    private Uuid $id;
 
     #[ORM\Column(length: 150)]
     #[Groups(['tournament:read'])]
@@ -53,10 +54,11 @@ class Tournament
 
     public function __construct()
     {
+        $this->id = Uuid::v7();
         $this->courts = new ArrayCollection();
     }
 
-    public function getId(): ?int
+    public function getId(): Uuid
     {
         return $this->id;
     }
