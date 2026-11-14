@@ -55,11 +55,11 @@ abstract class ApiTestCase extends WebTestCase
         return $court;
     }
 
-    protected function createOpenTournament(int $maxPlayers = 4): Tournament
+    protected function createOpenTournament(int $maxPlayers = 4, TournamentFormat $format = TournamentFormat::AMERICANO): Tournament
     {
         $tournament = new Tournament();
         $tournament->setName('Americano');
-        $tournament->setFormat(TournamentFormat::AMERICANO);
+        $tournament->setFormat($format);
         $tournament->setStartsAt(new \DateTimeImmutable('+7 days'));
         $tournament->setMaxPlayers($maxPlayers);
         $tournament->setStatus(TournamentStatus::OPEN);

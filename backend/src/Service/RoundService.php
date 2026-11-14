@@ -21,6 +21,7 @@ class RoundService
         private EntityManagerInterface $entityManager,
         private RoundRepository $roundRepository,
         private AmericanoPairing $americanoPairing,
+        private RankingCalculator $rankingCalculator,
     ) {
     }
 
@@ -74,15 +75,27 @@ class RoundService
                 $players = [...$players, ...$match->getPlayers()];
             }
 
-            if ($tournament->getFormat() !== TournamentFormat::AMERICANO) {
-                throw new ConflictException('Next rounds are available only for Americano for now', 'NOT_SUPPORTED');
-            }
-
             $currentRound->setStatus(RoundStatus::CLOSED);
-            $orderedPlayers = $this->americanoPairing->arrange($players, $previousMatches);
+
+            $orderedPlayers = match ($tournament->getFormat()) {
+                TournamentFormat::AMERICANO => $this->americanoPairing->arrange($players, $previousMatches),
+                TournamentFormat::MEXICANO => $this->arrangeMexicano($previousMatches),
+            };
 
             return $this->createRound($tournament, $currentRound->getNumber() + 1, $orderedPlayers);
         });
+    }
+
+    private function arrangeMexicano(array $previousMatches): array
+    {
+        $rankedPlayers = array_column($this->rankingCalculator->calculate($previousMatches), 'player');
+        $orderedPlayers = [];
+
+        foreach (array_chunk($rankedPlayers, 4) as [$first, $second, $third, $fourth]) {
+            $orderedPlayers = [...$orderedPlayers, $first, $fourth, $second, $third];
+        }
+
+        return $orderedPlayers;
     }
 
     private function createRound(Tournament $tournament, int $number, array $players): Round
