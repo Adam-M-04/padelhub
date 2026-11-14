@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { apiFetch } from '../api.js'
+import MyMatches from '../components/MyMatches.jsx'
 import RankingTable from '../components/RankingTable.jsx'
+import RegistrationBox from '../components/RegistrationBox.jsx'
 import { formatDate, formatLabels, playerName, statusLabels } from '../labels.js'
 
 export default function TournamentPage() {
@@ -9,21 +11,29 @@ export default function TournamentPage() {
   const [tournament, setTournament] = useState(null)
   const [registrations, setRegistrations] = useState(null)
   const [ranking, setRanking] = useState(null)
+  const [rounds, setRounds] = useState(null)
   const [error, setError] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     Promise.all([
       apiFetch(`/tournaments/${id}`),
       apiFetch(`/tournaments/${id}/registrations`),
       apiFetch(`/tournaments/${id}/ranking`),
+      apiFetch(`/tournaments/${id}/rounds`),
     ])
-      .then(([tournamentData, registrationsData, rankingData]) => {
+      .then(([tournamentData, registrationsData, rankingData, roundsData]) => {
         setTournament(tournamentData)
         setRegistrations(registrationsData)
         setRanking(rankingData)
+        setRounds(roundsData)
       })
       .catch((e) => setError(e.status === 404 ? 'Nie znaleziono turnieju.' : 'Nie udało się pobrać turnieju.'))
-  }, [id])
+  }, [id, reloadKey])
+
+  function reload() {
+    setReloadKey(reloadKey + 1)
+  }
 
   if (error) {
     return (
@@ -63,6 +73,8 @@ export default function TournamentPage() {
         </dl>
       </div>
 
+      <MyMatches tournament={tournament} rounds={rounds} onChanged={reload} />
+
       {started && (
         <section className="card">
           <h2>Ranking</h2>
@@ -72,6 +84,7 @@ export default function TournamentPage() {
 
       <section className="card">
         <h2>Zapisani gracze ({registrations.registered.length}/{tournament.maxPlayers})</h2>
+        <RegistrationBox tournament={tournament} registrations={registrations} onChanged={reload} />
         {registrations.registered.length === 0 ? (
           <p className="muted">Nikt się jeszcze nie zapisał.</p>
         ) : (
