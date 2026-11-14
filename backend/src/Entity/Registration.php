@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Enum\RegistrationStatus;
 use App\Repository\RegistrationRepository;
 use Doctrine\ORM\Mapping as ORM;
+use OpenApi\Attributes as OA;
 use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: RegistrationRepository::class)]
@@ -24,6 +25,7 @@ class Registration
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(['registration:read'])]
+    #[OA\Property(ref: '#/components/schemas/Player')]
     private ?User $player = null;
 
     #[ORM\Column(length: 20, enumType: RegistrationStatus::class)]

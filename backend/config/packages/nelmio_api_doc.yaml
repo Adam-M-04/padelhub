@@ -10,8 +10,44 @@ nelmio_api_doc:
                     type: http
                     scheme: bearer
                     bearerFormat: JWT
+            schemas:
+                Error:
+                    type: object
+                    properties:
+                        error:
+                            type: object
+                            properties:
+                                code:
+                                    type: string
+                                    example: VALIDATION_ERROR
+                                message:
+                                    type: string
+                                    example: Validation failed
+                                details:
+                                    type: array
+                                    items:
+                                        type: object
+                                        properties:
+                                            field:
+                                                type: string
+                                                example: email
+                                            message:
+                                                type: string
+                                                example: This value is not a valid email address.
         security:
             - Bearer: []
+        tags:
+            - { name: Konto, description: 'Rejestracja i logowanie' }
+            - { name: Turnieje, description: 'Publiczna lista i szczegóły turniejów' }
+            - { name: Zapisy, description: 'Zapisy graczy i lista rezerwowa' }
+            - { name: Rozgrywka, description: 'Rundy, wyniki meczów i ranking' }
+            - { name: Admin – korty, description: 'Zarządzanie kortami' }
+            - { name: Admin – turnieje, description: 'Zarządzanie turniejami i rundami' }
+            - { name: Admin – użytkownicy, description: 'Lista użytkowników' }
+    models:
+        names:
+            - { alias: User, type: App\Entity\User, groups: [user:read] }
+            - { alias: Player, type: App\Entity\User, groups: [player:read] }
     areas:
         path_patterns:
             - ^/api(?!/doc)

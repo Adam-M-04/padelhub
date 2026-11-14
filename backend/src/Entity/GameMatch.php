@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\GameMatchRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use OpenApi\Attributes as OA;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Uid\Uuid;
@@ -81,12 +82,14 @@ class GameMatch
     }
 
     #[Groups(['round:read', 'match:read'])]
+    #[OA\Property(type: 'array', items: new OA\Items(ref: '#/components/schemas/Player'))]
     public function getTeam1(): array
     {
         return [$this->team1Player1, $this->team1Player2];
     }
 
     #[Groups(['round:read', 'match:read'])]
+    #[OA\Property(type: 'array', items: new OA\Items(ref: '#/components/schemas/Player'))]
     public function getTeam2(): array
     {
         return [$this->team2Player1, $this->team2Player2];

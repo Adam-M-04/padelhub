@@ -3,6 +3,7 @@
 namespace App\Dto;
 
 use App\Enum\TournamentFormat;
+use OpenApi\Attributes as OA;
 use Symfony\Component\Validator\Constraints as Assert;
 
 class TournamentRequest
@@ -28,5 +29,6 @@ class TournamentRequest
     #[Assert\Count(min: 1, minMessage: 'Select at least one court.')]
     #[Assert\Unique]
     #[Assert\All([new Assert\Type('integer')])]
+    #[OA\Property(type: 'array', items: new OA\Items(type: 'integer', example: 1))]
     public array $courtIds = [];
 }
