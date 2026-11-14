@@ -72,4 +72,12 @@ class AdminTournamentController extends AbstractController
 
         return $this->json($tournament, Response::HTTP_OK, [], self::GROUPS);
     }
+
+    #[Route('/{id}/finish', name: 'api_admin_tournaments_finish', requirements: ['id' => Requirement::UUID], methods: ['POST'])]
+    public function finish(Uuid $id): JsonResponse
+    {
+        $tournament = $this->tournamentService->finish($id);
+
+        return $this->json($tournament, Response::HTTP_OK, [], self::GROUPS);
+    }
 }

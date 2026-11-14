@@ -53,12 +53,16 @@ class RankingCalculatorTest extends TestCase
         $this->assertSame([2, 1, 1, 0], array_column($ranking, 'wins'));
     }
 
-    public function testMatchesWithoutScoreAreSkipped(): void
+    public function testPlayersWithoutResultsHaveZeroPoints(): void
     {
         [$a, $b, $c, $d] = $this->players;
         $match = new GameMatch(new Round(new Tournament(), 1), new Court(), [$a, $b], [$c, $d]);
 
-        $this->assertSame([], (new RankingCalculator())->calculate([$match]));
+        $ranking = (new RankingCalculator())->calculate([$match]);
+
+        $this->assertSame([$a, $b, $c, $d], array_column($ranking, 'player'));
+        $this->assertSame([0, 0, 0, 0], array_column($ranking, 'points'));
+        $this->assertSame([0, 0, 0, 0], array_column($ranking, 'matches'));
     }
 
     private function match(array $team1, array $team2, int $team1Score, int $team2Score): GameMatch

@@ -9,6 +9,10 @@ class RankingCalculator
         $rows = [];
 
         foreach ($matches as $match) {
+            foreach ($match->getPlayers() as $player) {
+                $rows[(string) $player->getId()] ??= ['player' => $player, 'points' => 0, 'matches' => 0, 'wins' => 0];
+            }
+
             if (!$match->hasScore()) {
                 continue;
             }
@@ -26,8 +30,6 @@ class RankingCalculator
     {
         foreach ($team as $player) {
             $key = (string) $player->getId();
-            $rows[$key] ??= ['player' => $player, 'points' => 0, 'matches' => 0, 'wins' => 0];
-
             $rows[$key]['points'] += $scored;
             $rows[$key]['matches']++;
 

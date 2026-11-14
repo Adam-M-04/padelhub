@@ -27,13 +27,19 @@ class RoundService
 
     public function getList(Uuid $tournamentId): array
     {
-        $tournament = $this->entityManager->find(Tournament::class, $tournamentId);
+        return $this->roundRepository->findWithMatches($this->getPublishedTournament($tournamentId));
+    }
 
-        if ($tournament === null || $tournament->getStatus() === TournamentStatus::DRAFT) {
-            throw new NotFoundException('Tournament');
+    public function getRanking(Uuid $tournamentId): array
+    {
+        $rounds = $this->roundRepository->findWithMatches($this->getPublishedTournament($tournamentId));
+        $ranking = $this->rankingCalculator->calculate($this->allMatches($rounds));
+
+        foreach ($ranking as $index => $row) {
+            $ranking[$index] = ['position' => $index + 1, ...$row];
         }
 
-        return $this->roundRepository->findWithMatches($tournament);
+        return $ranking;
     }
 
     public function createFirstRound(Tournament $tournament, array $players): Round
@@ -56,26 +62,14 @@ class RoundService
                 throw new ConflictException('Tournament is not in progress', 'TOURNAMENT_NOT_IN_PROGRESS');
             }
 
-            $rounds = $this->roundRepository->findWithMatches($tournament);
+            $rounds = $this->closeCurrentRound($tournament);
             $currentRound = end($rounds);
-
-            foreach ($currentRound->getMatches() as $match) {
-                if (!$match->hasScore()) {
-                    throw new ConflictException('All matches of the current round must have results', 'ROUND_NOT_FINISHED');
-                }
-            }
-
-            $previousMatches = [];
-            foreach ($rounds as $round) {
-                $previousMatches = [...$previousMatches, ...$round->getMatches()->toArray()];
-            }
+            $previousMatches = $this->allMatches($rounds);
 
             $players = [];
             foreach ($currentRound->getMatches() as $match) {
                 $players = [...$players, ...$match->getPlayers()];
             }
-
-            $currentRound->setStatus(RoundStatus::CLOSED);
 
             $orderedPlayers = match ($tournament->getFormat()) {
                 TournamentFormat::AMERICANO => $this->americanoPairing->arrange($players, $previousMatches),
@@ -84,6 +78,43 @@ class RoundService
 
             return $this->createRound($tournament, $currentRound->getNumber() + 1, $orderedPlayers);
         });
+    }
+
+    public function closeCurrentRound(Tournament $tournament): array
+    {
+        $rounds = $this->roundRepository->findWithMatches($tournament);
+        $currentRound = end($rounds);
+
+        foreach ($currentRound->getMatches() as $match) {
+            if (!$match->hasScore()) {
+                throw new ConflictException('All matches of the current round must have results', 'ROUND_NOT_FINISHED');
+            }
+        }
+
+        $currentRound->setStatus(RoundStatus::CLOSED);
+
+        return $rounds;
+    }
+
+    private function getPublishedTournament(Uuid $tournamentId): Tournament
+    {
+        $tournament = $this->entityManager->find(Tournament::class, $tournamentId);
+
+        if ($tournament === null || $tournament->getStatus() === TournamentStatus::DRAFT) {
+            throw new NotFoundException('Tournament');
+        }
+
+        return $tournament;
+    }
+
+    private function allMatches(array $rounds): array
+    {
+        $matches = [];
+        foreach ($rounds as $round) {
+            $matches = [...$matches, ...$round->getMatches()->toArray()];
+        }
+
+        return $matches;
     }
 
     private function arrangeMexicano(array $previousMatches): array

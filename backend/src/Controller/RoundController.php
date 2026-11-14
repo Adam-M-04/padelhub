@@ -23,4 +23,10 @@ class RoundController extends AbstractController
 
         return $this->json($this->roundService->getList($id), Response::HTTP_OK, [], $groups);
     }
+
+    #[Route('/api/tournaments/{id}/ranking', name: 'api_tournament_ranking', requirements: ['id' => Requirement::UUID], methods: ['GET'])]
+    public function ranking(Uuid $id): JsonResponse
+    {
+        return $this->json($this->roundService->getRanking($id), Response::HTTP_OK, [], ['groups' => ['player:read']]);
+    }
 }

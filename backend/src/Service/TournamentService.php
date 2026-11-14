@@ -162,6 +162,26 @@ class TournamentService
         });
     }
 
+    public function finish(Uuid $id): Tournament
+    {
+        return $this->entityManager->wrapInTransaction(function () use ($id) {
+            $tournament = $this->entityManager->find(Tournament::class, $id, LockMode::PESSIMISTIC_WRITE);
+
+            if ($tournament === null) {
+                throw new NotFoundException('Tournament');
+            }
+
+            if ($tournament->getStatus() !== TournamentStatus::IN_PROGRESS) {
+                throw new ConflictException('Tournament is not in progress', 'TOURNAMENT_NOT_IN_PROGRESS');
+            }
+
+            $this->roundService->closeCurrentRound($tournament);
+            $tournament->setStatus(TournamentStatus::FINISHED);
+
+            return $tournament;
+        });
+    }
+
     private function applyRequest(Tournament $tournament, TournamentRequest $request): void
     {
         $courts = $this->courtRepository->findBy(['id' => $request->courtIds]);
