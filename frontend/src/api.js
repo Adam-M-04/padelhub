@@ -59,6 +59,7 @@ export async function apiFetch(path, { method = 'GET', body } = {}) {
     if (response.status === 401 && token) {
       removeToken()
       onUnauthorized()
+      return apiFetch(path, { method, body })
     }
 
     const error = data?.error

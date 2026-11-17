@@ -19,6 +19,20 @@ compose.yaml  MariaDB, backend, worker Messengera, frontend, Mailpit
 - **Wyniki i ranking** – wynik wpisuje gracz meczu (lub admin). Jednoczesne zmiany wyniku blokuje optimistic locking. Ranking liczony jest na bieżąco z punktów.
 - **Panel administratora** – zarządzanie kortami, turniejami (szkic → zapisy → w trakcie → zakończony) i podgląd użytkowników.
 
+## Zasady turniejów
+
+**Wspólne dla obu formatów:**
+
+- Turniej można wystartować, gdy liczba zapisanych graczy jest podzielna przez 4 (jeden mecz 2 na 2 na kort, maksymalnie 4 graczy na kort).
+- Pierwsza runda jest losowa: gracze są tasowani, dzieleni na czwórki, a każda czwórka trafia na kolejny kort (gracze 1 i 2 przeciw 3 i 4).
+- Mecz gra się do określonej liczby punktów (domyślnie 24). Suma punktów obu par musi być równa tej liczbie, np. 15:9.
+- Kolejną rundę admin tworzy dopiero, gdy wszystkie mecze bieżącej rundy mają wynik. Liczba rund nie jest stała – admin kończy turniej, kiedy chce.
+- Ranking: każdy gracz dostaje tyle punktów, ile zdobyła jego para. Przy remisie wyżej jest gracz z większą liczbą wygranych meczów.
+
+**Americano** – gramy z jak największą liczbą różnych partnerów. Od drugiej rundy system wielokrotnie losowo tasuje graczy i łączy ich w pary tak, by unikać osób, z którymi ktoś już grał. Wybierany jest układ z najmniejszą liczbą powtórzonych par (jeśli znajdzie się układ bez powtórzeń, losowanie kończy się wcześniej).
+
+**Mexicano** – grają ze sobą gracze o podobnym poziomie. Od drugiej rundy gracze są układani według aktualnego rankingu i dzieleni na czwórki: miejsca 1–4 grają na pierwszym korcie, 5–8 na drugim itd. W czwórce 1. i 4. gracz grają przeciw 2. i 3., żeby pary były wyrównane.
+
 ## Model danych
 
 ```mermaid
