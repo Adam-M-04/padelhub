@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Dto\TournamentFilter;
 use App\Dto\TournamentRequest;
 use App\Entity\Tournament;
 use App\Enum\RegistrationStatus;
@@ -33,9 +34,18 @@ class TournamentService
         return $this->tournamentRepository->findAllWithCourts();
     }
 
-    public function getPublished(): array
+    public function getPublished(TournamentFilter $filter): array
     {
-        return $this->tournamentRepository->findPublished();
+        $paginator = $this->tournamentRepository->findPublished($filter);
+        $total = count($paginator);
+
+        return [
+            'items' => iterator_to_array($paginator),
+            'page' => $filter->page,
+            'limit' => $filter->limit,
+            'total' => $total,
+            'pages' => (int) ceil($total / $filter->limit),
+        ];
     }
 
     public function get(Uuid $id): Tournament

@@ -359,3 +359,20 @@ fieldset {
   width: 100%;
   box-sizing: border-box;
 }
+
+.filters {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.filters input {
+  flex: 1;
+  min-width: 180px;
+}
+
+.pagination {
+  justify-content: center;
+  margin-top: 16px;
+}

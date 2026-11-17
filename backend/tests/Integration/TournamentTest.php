@@ -27,7 +27,53 @@ class TournamentTest extends ApiTestCase
         $this->jsonRequest('GET', '/api/tournaments');
 
         $this->assertResponseIsSuccessful();
-        $this->assertSame(['Wcześniej', 'Później'], array_column($this->responseData(), 'name'));
+        $this->assertSame(['Wcześniej', 'Później'], array_column($this->responseData()['items'], 'name'));
+    }
+
+    public function testListIsPaginated(): void
+    {
+        $this->addTournament('Pierwszy', '+1 day', TournamentStatus::OPEN);
+        $this->addTournament('Drugi', '+2 days', TournamentStatus::OPEN);
+        $this->addTournament('Trzeci', '+3 days', TournamentStatus::OPEN);
+
+        $this->jsonRequest('GET', '/api/tournaments?page=2&limit=2');
+
+        $this->assertResponseIsSuccessful();
+        $data = $this->responseData();
+        $this->assertSame(['Trzeci'], array_column($data['items'], 'name'));
+        $this->assertSame(2, $data['page']);
+        $this->assertSame(2, $data['limit']);
+        $this->assertSame(3, $data['total']);
+        $this->assertSame(2, $data['pages']);
+    }
+
+    public function testListCanBeSearchedByName(): void
+    {
+        $this->addTournament('Poranne Americano', '+1 day', TournamentStatus::OPEN);
+        $this->addTournament('Liga Mexicano', '+2 days', TournamentStatus::OPEN);
+
+        $this->jsonRequest('GET', '/api/tournaments?search=poranne');
+
+        $this->assertSame(['Poranne Americano'], array_column($this->responseData()['items'], 'name'));
+    }
+
+    public function testListCanBeFilteredByStatusAndFormat(): void
+    {
+        $this->addTournament('Otwarte Americano', '+1 day', TournamentStatus::OPEN);
+        $this->addTournament('Zakończone Americano', '+2 days', TournamentStatus::FINISHED);
+        $this->addTournament('Zakończone Mexicano', '+3 days', TournamentStatus::FINISHED, TournamentFormat::MEXICANO);
+
+        $this->jsonRequest('GET', '/api/tournaments?status=FINISHED&format=AMERICANO');
+
+        $this->assertSame(['Zakończone Americano'], array_column($this->responseData()['items'], 'name'));
+    }
+
+    public function testInvalidListParametersReturn400(): void
+    {
+        $this->jsonRequest('GET', '/api/tournaments?limit=100&status=DRAFT');
+
+        $this->assertErrorCode(400, 'VALIDATION_ERROR');
+        $this->assertSame(['limit', 'status'], array_column($this->responseData()['error']['details'], 'field'));
     }
 
     public function testPublicDetailsWithCourts(): void
@@ -72,15 +118,15 @@ class TournamentTest extends ApiTestCase
 
         $this->jsonRequest('GET', '/api/tournaments');
 
-        $this->assertSame((string) $tournament->getId(), $this->responseData()[0]['id']);
-        $this->assertTrue(Uuid::isValid($this->responseData()[0]['id']));
+        $this->assertSame((string) $tournament->getId(), $this->responseData()['items'][0]['id']);
+        $this->assertTrue(Uuid::isValid($this->responseData()['items'][0]['id']));
     }
 
-    private function addTournament(string $name, string $startsAt, TournamentStatus $status): Tournament
+    private function addTournament(string $name, string $startsAt, TournamentStatus $status, TournamentFormat $format = TournamentFormat::AMERICANO): Tournament
     {
         $tournament = new Tournament();
         $tournament->setName($name);
-        $tournament->setFormat(TournamentFormat::AMERICANO);
+        $tournament->setFormat($format);
         $tournament->setStartsAt(new \DateTimeImmutable($startsAt));
         $tournament->setMaxPlayers(4);
         $tournament->setStatus($status);

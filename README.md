@@ -10,27 +10,86 @@ frontend/     React + Vite
 compose.yaml  MariaDB, backend, worker Messengera, frontend, Mailpit
 ```
 
+## Główne funkcjonalności
+
+- **Konta i role** – rejestracja i logowanie (JWT). Rola `ROLE_PLAYER` dla graczy, `ROLE_ADMIN` dla organizatora.
+- **Lista turniejów** – publiczna, stronicowana, z wyszukiwaniem po nazwie i filtrami statusu oraz formatu.
+- **Zapisy** – gracz zapisuje się na turniej z otwartymi zapisami albo z niego rezygnuje. Po zapełnieniu miejsc trafia na listę rezerwową, a po zwolnieniu miejsca awansuje automatycznie (z e-mailem).
+- **Rundy i mecze** – po starcie turnieju system sam dobiera pary i korty (Americano: rotacja partnerów, Mexicano: pary według rankingu). Kolejna runda powstaje dopiero, gdy wszystkie mecze mają wynik. Gracze dostają e-mail z nową rundą.
+- **Wyniki i ranking** – wynik wpisuje gracz meczu (lub admin). Jednoczesne zmiany wyniku blokuje optimistic locking. Ranking liczony jest na bieżąco z punktów.
+- **Panel administratora** – zarządzanie kortami, turniejami (szkic → zapisy → w trakcie → zakończony) i podgląd użytkowników.
+
+## Model danych
+
+```mermaid
+erDiagram
+    USER ||--o{ REGISTRATION : "zapisuje się"
+    TOURNAMENT ||--o{ REGISTRATION : "ma zapisy"
+    TOURNAMENT }o--o{ COURT : "rozgrywany na"
+    TOURNAMENT ||--o{ ROUND : "składa się z"
+    ROUND ||--o{ GAME_MATCH : "zawiera"
+    COURT ||--o{ GAME_MATCH : "na korcie"
+    USER ||--o{ GAME_MATCH : "gra (4 graczy)"
+
+    USER {
+        uuid id
+        string email
+        string firstName
+        string lastName
+        json roles
+    }
+    TOURNAMENT {
+        uuid id
+        string name
+        enum format
+        datetime startsAt
+        int maxPlayers
+        enum status
+    }
+    COURT {
+        int id
+        string name
+        bool active
+    }
+    REGISTRATION {
+        int id
+        enum status
+        datetime registeredAt
+    }
+    ROUND {
+        int id
+        int number
+        enum status
+    }
+    GAME_MATCH {
+        uuid id
+        int team1Score
+        int team2Score
+        int version
+    }
+```
+
+- **Tournament** – turniej w formacie Americano albo Mexicano, rozgrywany na kilku kortach.
+- **Registration** – zapis gracza na turniej (zapisany, rezerwowy albo wycofany).
+- **Round** – kolejna runda turnieju.
+- **GameMatch** – mecz dwóch par na danym korcie, z wynikiem i wersją do optimistic locking.
+
 ## Uruchomienie
 
-1. Skopiuj `.env.example` do `.env` i uzupełnij hasła do bazy.
-2. Utwórz `backend/.env.local`:
+Wymagany jest tylko Docker.
 
-   ```
-   APP_SECRET=<losowy ciąg>
-   JWT_PASSPHRASE=<losowy ciąg>
-   FIXTURES_ADMIN_PASSWORD=<hasło administratora z fixtures>
-   FIXTURES_PLAYER_PASSWORD=<hasło graczy z fixtures>
-   DATABASE_URL="mysql://padelhub:<DB_PASSWORD>@127.0.0.1:3306/padelhub?serverVersion=11.4.0-MariaDB&charset=utf8mb4"
-   ```
-
-   `DATABASE_URL` jest potrzebny tylko przy uruchamianiu konsoli poza Dockerem.
-
-3. Zainstaluj zależności, wygeneruj klucze JWT i uruchom kontenery:
+1. Skopiuj `.env.example` do `.env` i uzupełnij wartości (hasła do bazy, `APP_SECRET`, `JWT_PASSPHRASE` oraz hasła kont z fixtures).
+2. Uruchom kontenery:
 
    ```bash
-   cd backend && composer install && php bin/console lexik:jwt:generate-keypair && cd ..
    docker compose up -d --build
-   docker compose exec backend php bin/console doctrine:migrations:migrate --no-interaction
+   ```
+
+   Przy starcie kontener backendu sam instaluje zależności (`composer install`), generuje klucze JWT i wykonuje migracje. Pierwsze uruchomienie trwa przez to dłużej.
+
+3. Załaduj przykładowe dane:
+
+   ```bash
    docker compose exec backend php bin/console doctrine:fixtures:load --no-interaction
    ```
 
@@ -65,4 +124,4 @@ docker compose exec backend php bin/console doctrine:migrations:migrate --env=te
 docker compose exec backend php bin/phpunit
 ```
 
-Sekrety (`APP_SECRET`, `JWT_PASSPHRASE`, hasła) są tylko w `.env` i `backend/.env.local`, które nie trafiają do repozytorium.
+Sekrety (`APP_SECRET`, `JWT_PASSPHRASE`, hasła) są tylko w `.env`, który nie trafia do repozytorium. Przy uruchamianiu konsoli Symfony poza Dockerem trzeba je podać w `backend/.env.local` (razem z `DATABASE_URL`).
